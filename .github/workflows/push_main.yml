@@ -1,0 +1,19 @@
+name: Main Branch Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  rust:
+    uses: "philipcristiano/workflows/.github/workflows/rust.yml@main"
+
+  flake:
+    uses: "philipcristiano/workflows/.github/workflows/nix.yml@main"
+    with:
+      flakes-from-devshell: true
+      script: |
+        cargo build
+        cargo run --
