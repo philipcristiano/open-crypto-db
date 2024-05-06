@@ -1,5 +1,6 @@
 id = "049c1057-82a0-4a3b-b365-10acb3da9862"
 name = "Bitcoin"
 
-[[source.coinbase]]
+[sources]
+[sources.coinbase]
 id = "BTC"

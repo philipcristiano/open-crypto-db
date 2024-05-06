@@ -1,5 +1,5 @@
 use clap::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::ops::Deref;
 use std::str;
@@ -16,13 +16,19 @@ pub struct Args {
     log_json: bool,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct Currency {
     id: uuid::Uuid,
     name: String,
+    sources: std::collections::HashMap<String, CurrencySourceInfo>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct CurrencySourceInfo {
+    id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct Source {
     id: String,
     name: String,
@@ -34,13 +40,18 @@ mod log;
 fn main() {
     let args = Args::parse();
     log::setup(args.log_level);
+    fs::create_dir_all(&args.output_path).expect("Creating output dir");
+    let currencies_dir = format!("{}/currencies", &args.output_path);
+    fs::create_dir_all(currencies_dir).expect("Creating output dir");
     tracing::info!("Reading data from: {}", args.data_path);
+
+    for source in load_sources(&args.data_path) {
+        println!("Name: {:?}", source);
+    }
 
     for currency in load_currences(&args.data_path) {
         println!("Name: {:?}", currency);
-    }
-    for source in load_sources(&args.data_path) {
-        println!("Name: {:?}", source);
+        write_currency(&args.output_path, &currency);
     }
 }
 
@@ -54,6 +65,14 @@ fn load_currences(base_dir: &String) -> impl Iterator<Item = Currency> {
         let d = fs::read_to_string(&p).expect("reading file");
         toml::from_str(&d).expect(&m)
     })
+}
+
+fn write_currency(path: &String, c: &Currency) {
+    let full_path = format!("{path}/currencies/{}", c.id);
+    let m = format!("Writing file {}", full_path);
+    let file = fs::File::create(full_path).expect(&m);
+    let file = std::io::BufWriter::new(file);
+    serde_json::to_writer(file, c).unwrap();
 }
 
 fn load_sources(base_dir: &String) -> impl Iterator<Item = Source> {
