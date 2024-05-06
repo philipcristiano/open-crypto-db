@@ -1,16 +1,18 @@
-name: Main Branch Deploy
+# release-plz creates the release/tag which won't trigger again for the commit for `push_main`
+name: Docker Release
 
 on:
+  release:
+    types: [published]
   push:
-    branches:
-      - main
+    tags:
+      - "*"
 
 jobs:
 
   docker_push:
     name: "Push docker image"
     uses: "philipcristiano/workflows/.github/workflows/docker-build-push.yml@main"
-    needs: [flake, rust]
     with:
       repository: ${{ github.repository }}
       timeout: 25
@@ -18,14 +20,3 @@ jobs:
     secrets:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
-  rust:
-    uses: "philipcristiano/workflows/.github/workflows/rust.yml@main"
-
-  flake:
-    uses: "philipcristiano/workflows/.github/workflows/nix.yml@main"
-    with:
-      flakes-from-devshell: true
-      script: |
-        cargo build
-        cargo run --
